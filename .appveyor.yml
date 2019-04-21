@@ -32,3 +32,10 @@ cache:
   # cache the dependencies folder, and invalidate the cache
   # if any of the files right of the arrow change
   - 'dependencies -> .appveyor.yml,%BUILD_PY%,build\build.xml'
+
+artifacts:
+  - path: 'build\dist\vnu.*.zip'
+    name: vnu.jar with JRE
+  - path: build\dist\vnu.jar
+    name: vnu.jar
+    type: zip
