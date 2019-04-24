@@ -1,0 +1,74 @@
+version: 2.1
+
+aliases:
+  - repo_cache_filename: &repo_cache_filename repo-{{ .Environment.CIRCLE_SHA1 }}
+  - &save_deps
+      key: deps-{{ .Branch }}-{{ checksum ".circleci/config.yml" }}-{{ checksum "build/build.py" }}-{{ checksum "build/build.xml" }}
+      name: Save dependencies
+      paths:
+        - ./dependencies/
+  - &restore_deps
+      keys:
+        - deps-{{ .Branch }}-{{ checksum ".circleci/config.yml" }}-{{ checksum "build/build.py" }}-{{ checksum "build/build.xml" }}
+        - deps-{{ checksum ".circleci/config.yml" }}-{{ checksum "build/build.py" }}-{{ checksum "build/build.xml" }}
+      name: Restore dependencies
+
+_install: &install
+  steps:
+    - checkout
+    - run: python build/build.py update
+    - save_cache:
+        key: *repo_cache_filename
+        name: Save repo
+        paths:
+          - ~/project/
+    - restore_cache: *restore_deps
+    - run: python build/build.py dldeps
+    - save_cache: *save_deps
+
+_image: &image
+  docker:
+    - image: circleci/openjdk:8-jdk-stretch
+
+commands:
+  run-tests:
+    parameters:
+      test-commands:
+        description: "Steps that will be executed after the repo is cloned, dependencies are installed and after tests are run"
+        type: steps
+        default: []
+    steps:
+      - restore_cache:
+          key: *repo_cache_filename
+          name: Restore repo
+      - restore_cache: *restore_deps
+      - run: java -version
+      - run: python --version
+      - run: python build/build.py build
+      #- run: python build/build.py check
+      - run: python build/build.py test
+      - run: python build/build.py jar
+      - run: java -jar build/dist/vnu.jar build/dist/index.html
+      - run: java -jar build/dist/vnu.jar site/nu-about.html
+      - run: python build/build.py war
+      - steps: << parameters.test-commands >>
+
+jobs:
+  install:
+    <<: *image
+    <<: *install
+
+  test:
+    <<: *image
+    steps:
+      - run-tests
+
+
+workflows:
+  version: 2
+  install-and-test:
+    jobs:
+      - install
+      - test:
+          requires:
+            - install
