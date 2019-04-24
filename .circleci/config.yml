@@ -13,24 +13,27 @@ aliases:
         - deps-{{ checksum ".circleci/config.yml" }}-{{ checksum "build/build.py" }}-{{ checksum "build/build.xml" }}
       name: Restore dependencies
 
-_install: &install
-  steps:
-    - checkout
-    - run: python build/build.py update
-    - save_cache:
-        key: *repo_cache_filename
-        name: Save repo
-        paths:
-          - ~/project/
-    - restore_cache: *restore_deps
-    - run: python build/build.py dldeps
-    - save_cache: *save_deps
-
-_image: &image
-  docker:
-    - image: circleci/openjdk:8-jdk-stretch
-
 commands:
+  install:
+    parameters:
+      install-commands:
+        description: "Steps that will be executed before running the tests"
+        type: steps
+        default: []
+    steps:
+      - checkout
+      - run: python build/build.py update
+      - save_cache:
+          key: *repo_cache_filename
+          name: Save repo
+          paths:
+            - ~/project/
+      - restore_cache: *restore_deps
+      - run: java -version
+      - run: python --version
+      - run: python build/build.py dldeps
+      - save_cache: *save_deps
+
   run-tests:
     parameters:
       test-commands:
@@ -38,12 +41,6 @@ commands:
         type: steps
         default: []
     steps:
-      - restore_cache:
-          key: *repo_cache_filename
-          name: Restore repo
-      - restore_cache: *restore_deps
-      - run: java -version
-      - run: python --version
       - run: python build/build.py build
       #- run: python build/build.py check
       - run: python build/build.py test
@@ -54,21 +51,29 @@ commands:
       - steps: << parameters.test-commands >>
 
 jobs:
-  install:
-    <<: *image
-    <<: *install
-
-  test:
-    <<: *image
+  java-8:
+    docker:
+      - image: circleci/openjdk:8-jdk-stretch
     steps:
+      - install
       - run-tests
-
+  java-11:
+    docker:
+      - image: circleci/openjdk:11-jdk-stretch
+    steps:
+      - install
+      - run-tests
+  java-12:
+    docker:
+      - image: circleci/openjdk:12-jdk-stretch
+    steps:
+      - install
+      - run-tests
 
 workflows:
   version: 2
-  install-and-test:
+  test:
     jobs:
-      - install
-      - test:
-          requires:
-            - install
+      - java-8
+      - java-11
+      #- java-12
