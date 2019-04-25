@@ -59,12 +59,13 @@ except ImportError:
     CAFILE = None
 
 javaTargetVersion = '1.8'
-javacCmd = os.getenv("JAVA_HOME") + '/bin/javac'
-jarCmd = os.getenv("JAVA_HOME") + '/bin/jar'
-javaCmd = os.getenv("JAVA_HOME") + '/bin/java'
-jdepsCmd = os.getenv("JAVA_HOME") + '/bin/jdeps'
-jlinkCmd = os.getenv("JAVA_HOME") + '/bin/jlink'
-javadocCmd = os.getenv("JAVA_HOME") + '/bin/javadoc'
+JAVA_HOME = os.getenv('JAVA_HOME')
+javacCmd = os.path.join(JAVA_HOME, 'bin', 'javac')
+jarCmd = os.path.join(JAVA_HOME, 'bin', 'jar')
+javaCmd = os.path.join(JAVA_HOME, 'bin', 'java')
+jdepsCmd = os.path.join(JAVA_HOME, 'bin', 'jdeps')
+jlinkCmd = os.path.join(JAVA_HOME, 'bin', 'jlink')
+javadocCmd = os.path.join(JAVA_HOME, 'bin', 'javadoc')
 herokuCmd = 'heroku'
 ghRelCmd = 'github-release'  # https://github.com/sideshowbarker/github-release
 tarCmd = 'tar'
@@ -1564,9 +1565,9 @@ def printHelp():
     print("                                Sets path to the filter file")
     print("  --git=/usr/bin/git         -- Sets path to the git binary")
     print("  --heap=512                 -- Sets Java heap size in MB")
-    print("  --html5link=http://www.whatwg.org/specs/web-apps/current-work/")
+    print("  --html5link=https://html.spec.whatwg.org/")
     print("                                Sets link URL of the HTML5 spec")
-    print("  --html5load=http://www.whatwg.org/specs/web-apps/current-work/")
+    print("  --html5load=https://html.spec.whatwg.org/")
     print("                                Sets load URL of the HTML5 spec")
     print("  --jar=/usr/bin/jar         -- Sets path to the jar binary")
     print("  --java=/usr/bin/java       -- Sets path to the java binary")

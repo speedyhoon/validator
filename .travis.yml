@@ -14,7 +14,9 @@ matrix:
       env: PYTHON=python3
     - os:  linux
       jdk: openjdk11
-      env: JAR_DEPLOY=Yes
+      env:
+        - JAR_DEPLOY=Yes
+        - PYTHON=python3
     - os:  linux
       jdk: openjdk11
       env: PYTHON=python3
@@ -27,19 +29,6 @@ matrix:
     - os:  linux
       jdk: openjdk12
       env: PYTHON=python3
-
-before_install:
-  - if [[ -z "$PYTHON" ]]; then PYTHON=python3; fi
-  - openssl aes-256-cbc -K $encrypted_88088d7aed65_key -iv $encrypted_88088d7aed65_iv
-    -in deploy_key.enc -out deploy_key -d
-  - openssl aes-256-cbc -K $encrypted_96f60dea8e9e_key -iv $encrypted_96f60dea8e9e_iv
-    -in key.gpg.enc -out key.gpg -d
-  - chmod 600 deploy_key
-  - cat known_hosts >> ~/.ssh/known_hosts
-  - chmod 600 ~/.ssh/known_hosts
-  - eval $(ssh-agent -s)
-  - ssh-add deploy_key
-  - gpg --import key.gpg
 
 install:
   - export TOMCAT_VERSION=8.5.29
@@ -54,7 +43,7 @@ script:
   - $PYTHON $BUILD_PY test
   - $PYTHON $BUILD_PY war
   - jar xf ./build/dist-war/vnu.war && file WEB-INF/classes/nu/validator/servlet/VerifierServlet.class | grep "version 52.0"
-  - curl -O http://archive.apache.org/dist/tomcat/tomcat-8/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.zip
+  - curl -O https://archive.apache.org/dist/tomcat/tomcat-8/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.zip
   - unzip apache-tomcat-$TOMCAT_VERSION.zip
   - chmod a+x apache-tomcat-$TOMCAT_VERSION/bin/*.sh
   - apache-tomcat-$TOMCAT_VERSION/bin/catalina.sh start
@@ -80,6 +69,16 @@ notifications:
     on_failure: always  # options: [always|never|change] default: always
 
 before_deploy:
+  - openssl aes-256-cbc -K $encrypted_88088d7aed65_key -iv $encrypted_88088d7aed65_iv
+    -in deploy_key.enc -out deploy_key -d
+  - openssl aes-256-cbc -K $encrypted_96f60dea8e9e_key -iv $encrypted_96f60dea8e9e_iv
+    -in key.gpg.enc -out key.gpg -d
+  - chmod 600 deploy_key
+  - cat known_hosts >> ~/.ssh/known_hosts
+  - chmod 600 ~/.ssh/known_hosts
+  - eval $(ssh-agent -s)
+  - ssh-add deploy_key
+  - gpg --import key.gpg
   - for file in build/dist/{*.zip,*.jar,*.zip.sha1,*.zip.md5,*.jar.md5,*.jar.sha1}; do gpg --yes -ab --local-user 0x6C976B92 --sign $file; done
   - ls -al build/dist
   - git config --local user.name "Travis CI"
@@ -93,6 +92,7 @@ before_deploy:
 deploy:
   - provider: releases
     overwrite: true
+    prerelease: true
     file_glob: true
     skip_cleanup: true
     file: "build/dist/{*.jar*}"
@@ -104,6 +104,7 @@ deploy:
       secure: "Rx95y6BDpQSCPkWr8FqUByet61U7z1Tqo3KrRm2AN2MLbch9YcX8KScvH3Mmtk3wEsdOTsgLt6SYxBrU/7RKLKlvUTaIRFecQm/hZuhThLcd91q40Oy3KcedSsUUaYljRbvg/nh6MeloVOvDM5VitqV07NwykA0pVrSqoFJDBHA="
   - provider: releases
     overwrite: true
+    prerelease: true
     file_glob: true
     skip_cleanup: true
     file: "build/dist/{*.zip*}"
